@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jadwal Kerja Lengkap</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    input, select, button {
+      margin: 5px;
+      padding: 8px;
+    }
+    .filter-container {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Jadwal Kerja Lengkap</h1>
+
+  <div>
+    <input type="text" id="nama" placeholder="Nama Karyawan" />
+    <select id="hari">
+      <option value="Senin">Senin</option>
+      <option value="Selasa">Selasa</option>
+      <option value="Rabu">Rabu</option>
+      <option value="Kamis">Kamis</option>
+      <option value="Jumat">Jumat</option>
+      <option value="Sabtu">Sabtu</option>
+      <option value="Minggu">Minggu</option>
+    </select>
+    <input type="text" id="shift" placeholder="Shift (contoh: Pagi)" />
+    <button onclick="tambahJadwal()">Tambah</button>
+    <button onclick="exportCSV()">Export ke CSV</button>
+  </div>
+
+  <div class="filter-container">
+    <input type="text" id="filterNama" placeholder="Cari nama..." oninput="tampilkanJadwal()" />
+    <select id="filterHari" onchange="tampilkanJadwal()">
+      <option value="">Semua Hari</option>
+      <option value="Senin">Senin</option>
+      <option value="Selasa">Selasa</option>
+      <option value="Rabu">Rabu</option>
+      <option value="Kamis">Kamis</option>
+      <option value="Jumat">Jumat</option>
+      <option value="Sabtu">Sabtu</option>
+      <option value="Minggu">Minggu</option>
+    </select>
+  </div>
+
+  <table id="jadwal">
+    <thead>
+      <tr>
+        <th>Nama</th>
+        <th>Hari</th>
+        <th>Shift</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    let dataJadwal = JSON.parse(localStorage.getItem("jadwalKerja")) || [];
+
+    function simpanKeLocalStorage() {
+      localStorage.setItem("jadwalKerja", JSON.stringify(dataJadwal));
+    }
+
+    function tampilkanJadwal() {
+      const tbody = document.getElementById("jadwal").getElementsByTagName("tbody")[0];
+      const filterNama = document.getElementById("filterNama").value.toLowerCase();
+      const filterHari = document.getElementById("filterHari").value;
+      tbody.innerHTML = "";
+
+      dataJadwal.forEach((item, index) => {
+        if (
+          (!filterNama || item.nama.toLowerCase().includes(filterNama)) &&
+          (!filterHari || item.hari === filterHari)
+        ) {
+          const row = tbody.insertRow();
+          row.insertCell(0).innerText = item.nama;
+          row.insertCell(1).innerText = item.hari;
+          row.insertCell(2).innerText = item.shift;
+          const aksiCell = row.insertCell(3);
+          aksiCell.innerHTML = `
+            <button onclick="editJadwal(${index})">Edit</button>
+            <button onclick="hapusJadwal(${index})">Hapus</button>
+          `;
+        }
+      });
+    }
+
+    function tambahJadwal() {
+      const nama = document.getElementById("nama").value;
+      const hari = document.getElementById("hari").value;
+      const shift = document.getElementById("shift").value;
+
+      if (nama && shift) {
+        const baru = { nama, hari, shift };
+        dataJadwal.push(baru);
+        simpanKeLocalStorage();
+        tampilkanJadwal();
+        document.getElementById("nama").value = "";
+        document.getElementById("shift").value = "";
+      } else {
+        alert("Isi semua kolom terlebih dahulu.");
+      }
+    }
+
+    function hapusJadwal(index) {
+      if (confirm("Yakin ingin menghapus jadwal ini?")) {
+        dataJadwal.splice(index, 1);
+        simpanKeLocalStorage();
+        tampilkanJadwal();
+      }
+    }
+
+    function editJadwal(index) {
+      const item = dataJadwal[index];
+      const namaBaru = prompt("Edit nama:", item.nama);
+      const hariBaru = prompt("Edit hari:", item.hari);
+      const shiftBaru = prompt("Edit shift:", item.shift);
+      if (namaBaru && hariBaru && shiftBaru) {
+        dataJadwal[index] = { nama: namaBaru, hari: hariBaru, shift: shiftBaru };
+        simpanKeLocalStorage();
+        tampilkanJadwal();
+      }
+    }
+
+    function exportCSV() {
+      let csv = "Nama,Hari,Shift\n";
+      dataJadwal.forEach(item => {
+        csv += `"${item.nama}","${item.hari}","${item.shift}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "jadwal_kerja.csv";
+      link.click();
+    }
+
+    tampilkanJadwal();
+  </script>
+</body>
+</html>
